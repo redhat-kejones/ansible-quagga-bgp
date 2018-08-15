@@ -39,7 +39,7 @@ Example Playbook
 License
 -------
 
-GNUv3
+GPLv3
 
 Author Information
 ------------------
