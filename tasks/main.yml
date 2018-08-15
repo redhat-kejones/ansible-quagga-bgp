@@ -1,0 +1,65 @@
+---
+# tasks file for ansible-quagga-bgp
+- name: install quagga
+  yum:
+    name: quagga
+    state: present
+
+- name: register quagga package info
+  yum:
+    list: quagga
+    state: installed
+  register: quagga_info
+
+- debug:
+    msg: "{{ quagga_info }}"
+
+- name: set SELinux bool for zebra write permission
+  seboolean:
+    name: zebra_write_config
+    state: yes
+    persistent: yes
+
+- name: copy zebra sample config
+  copy:
+    src: "/usr/share/doc/quagga-{{ item.version }}/zebra.conf.sample"
+    dest: /etc/quagga/zebra.conf
+    remote_src: true
+  with_items:
+    - "{{ quagga_info.results }}"
+  when: item.yumstate == 'installed'
+
+- name: start and enable zebra service
+  service:
+    name: zebra
+    enabled: yes
+    state: started
+
+#NOTE: Currently not working with NCLU
+#      May need cumulus quagga package for that
+#      Prob better to just do from templates to conf files
+#- name: configure log file for quagga router
+#  nclu:
+#    commands:
+#        - configure terminal
+#        - log file /var/log/quagga/quagga.log
+#        - write
+#    atomic: true
+
+#TODO: configure interfaces on bgp routers
+
+- name: copy bgp sample config
+  copy:
+    src: "/usr/share/doc/quagga-{{ item.version }}/bgpd.conf.sample"
+    dest: /etc/quagga/bgpd.conf
+    remote_src: true
+  with_items:
+    - "{{ quagga_info.results }}"
+  when: item.yumstate == 'installed'
+
+- name: start and enable bgpd service
+  service:
+    name: bgpd
+    enabled: yes
+    state: started
+
